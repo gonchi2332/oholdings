@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 const testimonials = [
     {
         id: 1,
-        quote: "BuildX has completely transformed how we handle our data pipeline. The intelligent agents are a game changer.",
+        quote: "OHoldings has completely transformed how we handle our data pipeline. The intelligent agents are a game changer.",
         author: "Sarah Chen",
         role: "CTO at TechFlow",
         avatar: "SC"
@@ -33,7 +33,7 @@ export default function Testimonials() {
                         Trusted by Industry Leaders
                     </h2>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        See what our customers have to say about their experience with BuildX.
+                        See what our customers have to say about their experience with OHoldings.
                     </p>
                 </div>
 

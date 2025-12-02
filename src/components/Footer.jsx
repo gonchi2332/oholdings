@@ -6,7 +6,7 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
                     <div className="col-span-2 md:col-span-1">
-                        <span className="text-xl font-bold text-mineral-green mb-4 block">BuildX</span>
+                        <span className="text-xl font-bold text-mineral-green mb-4 block">OHoldings</span>
                         <p className="text-gray-500 text-sm leading-relaxed">
                             Building the future of web development, one component at a time.
                         </p>
@@ -41,7 +41,7 @@ export default function Footer() {
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-100">
                     <p className="text-gray-500 text-sm mb-4 md:mb-0">
-                        © 2024 BuildX Inc. All rights reserved.
+                        © 2024 OHoldings Inc. All rights reserved.
                     </p>
                     <div className="flex space-x-6">
                         <a href="#" className="text-gray-400 hover:text-mineral-green transition-colors">

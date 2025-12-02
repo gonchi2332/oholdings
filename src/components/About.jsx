@@ -8,7 +8,7 @@ export default function About() {
                             Empowering the Next Generation of Builders
                         </h2>
                         <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            At BuildX, we believe that the future of software development lies in intelligent automation. We are building the infrastructure that allows teams to focus on creativity while our agents handle the complexity.
+                            At OHoldings, we believe that the future of software development lies in intelligent automation. We are building the infrastructure that allows teams to focus on creativity while our agents handle the complexity.
                         </p>
                         <p className="text-lg text-gray-600 leading-relaxed">
                             Founded by industry veterans, we are backed by top-tier investors who share our vision of a faster, more reliable web.

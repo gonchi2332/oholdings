@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, User, X } from 'lucide-react';
 import { appointmentService } from '../services/appointments';
 import { useAuth } from '../context/AuthContext';
 
-export default function CalendarView({ refreshTrigger }) {
+export default function CalendarView({ refreshTrigger, selectedEmployeeId }) {
     const { user } = useAuth();
     const [appointments, setAppointments] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -14,8 +15,9 @@ export default function CalendarView({ refreshTrigger }) {
             if (!user) return;
             try {
                 setLoading(true);
-                const data = await appointmentService.getAppointments();
-                // Filter only approved appointments for the calendar
+                // If selectedEmployeeId is provided, fetch appointments for that specialist
+                // Otherwise, fetch all appointments (for employees, this will be filtered by backend)
+                const data = await appointmentService.getAppointments(selectedEmployeeId);
                 const approved = (data.appointments || []).filter(app => app.status === 'approved');
                 setAppointments(approved);
             } catch (err) {
@@ -25,7 +27,7 @@ export default function CalendarView({ refreshTrigger }) {
             }
         };
         fetchAppointments();
-    }, [user, refreshTrigger]);
+    }, [user, refreshTrigger, selectedEmployeeId]);
 
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
@@ -37,13 +39,8 @@ export default function CalendarView({ refreshTrigger }) {
 
     const { days, firstDay } = getDaysInMonth(currentDate);
 
-    const prevMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-    };
-
-    const nextMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-    };
+    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
 
     const isSameDay = (date1, date2) => {
         return date1.getDate() === date2.getDate() &&
@@ -56,16 +53,94 @@ export default function CalendarView({ refreshTrigger }) {
         return appointments.filter(app => isSameDay(new Date(app.fecha_consulta), date));
     };
 
+    const handleDayClick = (day) => {
+        setSelectedDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+    };
+
+    const closeDailyView = () => setSelectedDate(null);
+
+    // Daily View Component
+    const DailyView = ({ date, appointments }) => {
+        // Working hours: 8 AM to 6 PM
+        const startHour = 8;
+        const endHour = 18;
+        const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+
+        const getAppointmentsForHour = (hour) => {
+            return appointments.filter(app => {
+                const appDate = new Date(app.fecha_consulta);
+                return appDate.getHours() === hour;
+            });
+        };
+
+        return (
+            <div className="absolute inset-0 bg-white z-10 flex flex-col animate-in slide-in-from-bottom-10 fade-in duration-300">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <CalendarIcon className="w-5 h-5 text-mineral-green" />
+                        {date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </h3>
+                    <button onClick={closeDailyView} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                    <div className="space-y-4">
+                        {hours.map(hour => {
+                            const hourApps = getAppointmentsForHour(hour);
+                            const isPast = new Date().setHours(0, 0, 0, 0) > date.setHours(0, 0, 0, 0) || (isSameDay(new Date(), date) && new Date().getHours() > hour);
+
+                            return (
+                                <div key={hour} className="flex gap-4 group">
+                                    <div className="w-16 text-right text-sm font-medium text-gray-500 pt-2">
+                                        {hour}:00
+                                    </div>
+                                    <div className={`flex-1 min-h-[80px] rounded-xl border p-1 ${hourApps.length > 0 ? 'bg-white border-gray-200' :
+                                            isPast ? 'bg-gray-50 border-gray-100' : 'bg-white border-dashed border-gray-200'
+                                        }`}>
+                                        {hourApps.length > 0 ? (
+                                            hourApps.map(app => (
+                                                <div key={app.id} className="bg-mineral-green/10 border border-mineral-green/20 p-3 rounded-lg h-full flex flex-col justify-center">
+                                                    <div className="font-bold text-mineral-green-dark text-sm">{app.empresa}</div>
+                                                    <div className="text-xs text-mineral-green-dark/80 flex items-center gap-1">
+                                                        <User className="w-3 h-3" />
+                                                        {app.employee?.full_name}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-xs text-gray-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                Available
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-64 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex justify-center items-center h-96 bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mineral-green"></div>
             </div>
         );
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative flex flex-col" style={{ minHeight: '600px' }}>
+            {selectedDate && (
+                <DailyView
+                    date={selectedDate}
+                    appointments={appointments.filter(app => isSameDay(new Date(app.fecha_consulta), selectedDate))}
+                />
+            )}
+
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <CalendarIcon className="w-5 h-5 text-mineral-green" />
@@ -81,15 +156,15 @@ export default function CalendarView({ refreshTrigger }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-px bg-gray-200">
+            <div className="grid grid-cols-7 gap-px bg-gray-200 border-b border-gray-200">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="bg-gray-50 p-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <div key={day} className="bg-gray-50 p-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
                         {day}
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-px bg-gray-200">
+            <div className="grid grid-cols-7 gap-px bg-gray-200 flex-1 overflow-y-auto">
                 {Array.from({ length: firstDay }).map((_, i) => (
                     <div key={`empty-${i}`} className="bg-white min-h-[100px]" />
                 ))}
@@ -100,34 +175,28 @@ export default function CalendarView({ refreshTrigger }) {
                     const isToday = isSameDay(new Date(), new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
 
                     return (
-                        <div key={day} className={`bg-white min-h-[100px] p-2 transition-colors hover:bg-gray-50 ${isToday ? 'bg-blue-50/30' : ''}`}>
-                            <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+                        <div
+                            key={day}
+                            onClick={() => handleDayClick(day)}
+                            className={`bg-white min-h-[100px] p-2 transition-colors hover:bg-gray-50 cursor-pointer relative group ${isToday ? 'bg-blue-50/30' : ''}`}
+                        >
+                            <div className={`text-sm font-medium mb-1 w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700 group-hover:bg-gray-200'}`}>
                                 {day}
                             </div>
                             <div className="space-y-1">
-                                {dayAppointments.map(app => (
+                                {dayAppointments.slice(0, 3).map(app => (
                                     <div
                                         key={app.id}
-                                        className="text-xs p-1.5 rounded bg-green-50 text-green-800 border border-green-100 truncate group relative cursor-help"
-                                        title={`${new Date(app.fecha_consulta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${app.empresa}`}
+                                        className="text-[10px] px-1.5 py-1 rounded bg-mineral-green/10 text-mineral-green-dark border border-mineral-green/20 truncate font-medium"
                                     >
-                                        <div className="font-medium flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(app.fecha_consulta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                        <div className="truncate">{app.empresa}</div>
-
-                                        {/* Tooltip */}
-                                        <div className="hidden group-hover:block absolute z-10 left-0 bottom-full mb-1 w-48 bg-gray-900 text-white p-2 rounded shadow-lg text-xs whitespace-normal">
-                                            <div className="font-bold mb-1">{app.empresa}</div>
-                                            <div className="mb-1">{app.tipo_consulta}</div>
-                                            <div className="flex items-center gap-1 text-gray-300">
-                                                <User className="w-3 h-3" />
-                                                {app.employees?.full_name}
-                                            </div>
-                                        </div>
+                                        {new Date(app.fecha_consulta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {app.empresa}
                                     </div>
                                 ))}
+                                {dayAppointments.length > 3 && (
+                                    <div className="text-[10px] text-gray-400 pl-1">
+                                        + {dayAppointments.length - 3} more
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );

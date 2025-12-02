@@ -13,6 +13,7 @@ import { useAuth } from './context/AuthContext';
 function App() {
   const { user } = useAuth();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   return (
     <Layout>
@@ -28,17 +29,24 @@ function App() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
               {/* Form Section */}
               <div className="lg:col-span-4">
-                <AppointmentForm onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+                <AppointmentForm 
+                  onSuccess={() => setRefreshTrigger(prev => prev + 1)} 
+                  onSpecialistChange={(employeeId) => setSelectedEmployeeId(employeeId)}
+                />
               </div>
 
-              {/* List and Calendar Section */}
-              <div className="lg:col-span-8 space-y-8">
-                <CalendarView refreshTrigger={refreshTrigger} />
-                <AppointmentList refreshTrigger={refreshTrigger} />
+              {/* Calendar Section */}
+              <div className="lg:col-span-8">
+                <CalendarView refreshTrigger={refreshTrigger} selectedEmployeeId={selectedEmployeeId} />
               </div>
+            </div>
+
+            {/* Appointments List Section */}
+            <div className="border-t border-gray-200 pt-16">
+              <AppointmentList refreshTrigger={refreshTrigger} onRefresh={() => setRefreshTrigger(prev => prev + 1)} />
             </div>
           </div>
         </section>
