@@ -3,7 +3,7 @@ import { Calendar, MapPin, Building, Trash2, Clock, Video, AlertCircle, CheckCir
 import { appointmentService } from '../services/appointments';
 import { useAuth } from '../context/AuthContext';
 
-export default function AppointmentList({ refreshTrigger, onRefresh }) {
+export default function AppointmentList({ refreshTrigger, onRefresh, employeeId = null }) {
     const { user } = useAuth();
     const [appointments, setAppointments] = useState([]);
     const [isEmployee, setIsEmployee] = useState(false);
@@ -11,12 +11,20 @@ export default function AppointmentList({ refreshTrigger, onRefresh }) {
     const [error, setError] = useState(null);
 
     const fetchAppointments = async () => {
-        if (!user) return;
+        if (!user && !employeeId) return;
         try {
             setLoading(true);
-            const data = await appointmentService.getAppointments();
-            setAppointments(data.appointments || []);
-            setIsEmployee(data.isEmployee);
+            // If employeeId is provided, fetch appointments for that employee
+            if (employeeId) {
+                const { adminService } = await import('../services/admin');
+                const apps = await adminService.getEmployeeAppointments(employeeId);
+                setAppointments(apps || []);
+                setIsEmployee(true);
+            } else {
+                const data = await appointmentService.getAppointments();
+                setAppointments(data.appointments || []);
+                setIsEmployee(data.isEmployee);
+            }
         } catch (err) {
             console.error(err);
             setError('Failed to load appointments.');
@@ -27,7 +35,7 @@ export default function AppointmentList({ refreshTrigger, onRefresh }) {
 
     useEffect(() => {
         fetchAppointments();
-    }, [user, refreshTrigger]);
+    }, [user, refreshTrigger, employeeId]);
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this appointment?')) return;
@@ -178,8 +186,8 @@ export default function AppointmentList({ refreshTrigger, onRefresh }) {
                                 </>
                             )}
 
-                            {/* Customers can accept/reject appointments created by employees */}
-                            {!isEmployee && appointment.status?.name === 'pending' && (
+                            {/* Customers can only accept/reject appointments created by employees */}
+                            {!isEmployee && appointment.status?.name === 'pending' && appointment.created_by_employee && (
                                 <>
                                     <button
                                         onClick={() => handleStatusUpdate(appointment.id, 'approved')}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Mail, Phone, User, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,19 @@ export default function LoginModal({ isOpen, onClose }) {
         fullName: ''
     });
 
-    const { signIn, signUp, signInWithProvider } = useAuth();
+    const { signIn, signUp, signInWithProvider, user } = useAuth();
+
+    // Clear form when modal closes or user logs out
+    useEffect(() => {
+        if (!isOpen || !user) {
+            setFormData({
+                email: '',
+                password: '',
+                fullName: ''
+            });
+            setError(null);
+        }
+    }, [isOpen, user]);
 
     if (!isOpen) return null;
 
@@ -28,6 +40,12 @@ export default function LoginModal({ isOpen, onClose }) {
             } else {
                 await signUp(formData.email, formData.password, formData.fullName);
             }
+            // Clear form on successful login/signup
+            setFormData({
+                email: '',
+                password: '',
+                fullName: ''
+            });
             onClose();
         } catch (err) {
             setError(err.message);
@@ -51,7 +69,16 @@ export default function LoginModal({ isOpen, onClose }) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={onClose}
+                    onClick={() => {
+                        // Clear form when closing modal
+                        setFormData({
+                            email: '',
+                            password: '',
+                            fullName: ''
+                        });
+                        setError(null);
+                        onClose();
+                    }}
                     className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
                 />
 
@@ -66,7 +93,19 @@ export default function LoginModal({ isOpen, onClose }) {
                             <h2 className="text-2xl font-bold text-gray-900">
                                 {isLogin ? 'Sign In' : 'Create Account'}
                             </h2>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <button 
+                                onClick={() => {
+                                    // Clear form when closing modal
+                                    setFormData({
+                                        email: '',
+                                        password: '',
+                                        fullName: ''
+                                    });
+                                    setError(null);
+                                    onClose();
+                                }} 
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -196,6 +235,12 @@ export default function LoginModal({ isOpen, onClose }) {
                                 onClick={() => {
                                     setIsLogin(!isLogin);
                                     setError(null);
+                                    // Clear form when switching modes
+                                    setFormData({
+                                        email: '',
+                                        password: '',
+                                        fullName: ''
+                                    });
                                 }}
                                 className="text-gray-600 hover:text-gray-900"
                             >

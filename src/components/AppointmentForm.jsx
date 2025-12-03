@@ -159,18 +159,66 @@ export default function AppointmentForm({ onSuccess, onSpecialistChange }) {
 
     const handleDateChange = (e) => {
         const newDateValue = e.target.value;
-        const currentTime = timeValue || '00:00';
-        setFormData({ ...formData, fecha_consulta: newDateValue ? `${newDateValue}T${currentTime}` : '' });
+        if (!newDateValue) {
+            setFormData({ ...formData, fecha_consulta: '' });
+            return;
+        }
+        
+        // Validate that the selected date is not in the past
+        const selectedDate = new Date(newDateValue);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            setError('No se pueden seleccionar fechas pasadas. Por favor selecciona una fecha futura.');
+            return;
+        }
+        
+        // If selecting today, clear the time so user must select a future time
+        if (selectedDate.getTime() === today.getTime()) {
+            setFormData({ ...formData, fecha_consulta: newDateValue + 'T' });
+        } else {
+            const currentTime = timeValue || '00:00';
+            setFormData({ ...formData, fecha_consulta: `${newDateValue}T${currentTime}` });
+        }
     };
 
     const handleTimeChange = (e) => {
         if (!dateValue) {
-            setError('Please select a date first before choosing a time.');
+            setError('Por favor selecciona una fecha antes de elegir una hora.');
             return;
         }
+        
         const newTimeValue = e.target.value;
         const datePart = formData.fecha_consulta.split('T')[0] || new Date().toISOString().split('T')[0];
-        setFormData({ ...formData, fecha_consulta: `${datePart}T${newTimeValue}` });
+        const fullDateTime = `${datePart}T${newTimeValue}`;
+        
+        // Validate that the selected time is in the future
+        const selectedDateTime = new Date(fullDateTime);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const selectedDate = new Date(selectedDateTime.getFullYear(), selectedDateTime.getMonth(), selectedDateTime.getDate());
+        
+        // If selecting today, validate that time is in the future with 15 min buffer
+        if (selectedDate.getTime() === today.getTime()) {
+            const selectedTimeMinutes = selectedDateTime.getHours() * 60 + selectedDateTime.getMinutes();
+            const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            if (selectedTimeMinutes <= currentTimeMinutes + 15) {
+                setError('La hora debe ser al menos 15 minutos en el futuro. Por favor selecciona una hora más tarde.');
+                return;
+            }
+        }
+        
+        // If date is in the past, show error
+        if (selectedDate < today) {
+            setError('No se pueden seleccionar fechas pasadas. Por favor selecciona una fecha futura.');
+            return;
+        }
+        
+        setFormData({ ...formData, fecha_consulta: fullDateTime });
+        setError(null); // Clear any previous errors
     };
 
     const handleSubmit = async (e) => {
@@ -179,9 +227,35 @@ export default function AppointmentForm({ onSuccess, onSpecialistChange }) {
         setError(null);
 
         try {
+            // Validate that the appointment date/time is in the future
+            const appointmentDateTime = new Date(formData.fecha_consulta);
+            const now = new Date();
+            
+            // Check if date/time is in the past
+            if (appointmentDateTime <= now) {
+                setError('No se pueden agendar citas en el pasado. Por favor selecciona una fecha y hora futura.');
+                setLoading(false);
+                return;
+            }
+            
+            // If it's today, check if time is at least 15 minutes in the future
+            const appointmentDate = new Date(appointmentDateTime.getFullYear(), appointmentDateTime.getMonth(), appointmentDateTime.getDate());
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            if (appointmentDate.getTime() === today.getTime()) {
+                const appointmentTimeMinutes = appointmentDateTime.getHours() * 60 + appointmentDateTime.getMinutes();
+                const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+                
+                if (appointmentTimeMinutes <= currentTimeMinutes + 15) {
+                    setError('La cita debe ser al menos 15 minutos en el futuro. Por favor selecciona una hora más tarde.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const payload = {
                 ...formData,
-                fecha_consulta: new Date(formData.fecha_consulta).toISOString()
+                fecha_consulta: appointmentDateTime.toISOString()
             };
 
             if (isEmployee) {
@@ -209,8 +283,31 @@ export default function AppointmentForm({ onSuccess, onSpecialistChange }) {
             if (onSuccess) onSuccess();
         } catch (err) {
             console.error('Appointment creation error:', err);
-            // Extract user-friendly error message
-            const errorMessage = err?.error?.error || err?.message || 'Failed to schedule appointment. Please try again.';
+            // Extract user-friendly error message from various possible formats
+            let errorMessage = 'Failed to schedule appointment. Please try again.';
+            
+            if (err) {
+                // Check different error formats
+                if (err.message) {
+                    errorMessage = err.message;
+                } else if (err.error) {
+                    if (typeof err.error === 'string') {
+                        errorMessage = err.error;
+                    } else if (err.error.error) {
+                        errorMessage = err.error.error;
+                    } else if (err.error.message) {
+                        errorMessage = err.error.message;
+                    }
+                }
+            }
+            
+            // Translate common error messages to Spanish if needed
+            if (errorMessage.includes('already booked') || errorMessage.includes('time slot')) {
+                errorMessage = 'Este horario ya está ocupado. Por favor selecciona otro horario.';
+            } else if (errorMessage.includes('past')) {
+                errorMessage = 'No se pueden agendar citas en el pasado. Por favor selecciona una fecha y hora futura.';
+            }
+            
             setError(errorMessage);
         } finally {
             setLoading(false);

@@ -48,7 +48,8 @@ export class CitasService {
                 modalidad_id: payload.modalidad_id,
                 direccion: payload.direccion ? sanitizeString(payload.direccion) : undefined,
                 employee_id: targetEmployeeId,
-                status_id: statusId
+                status_id: statusId,
+                created_by_employee: this.isEmployee
             }])
             .select(`
                 *,
@@ -67,6 +68,12 @@ export class CitasService {
             .from('status_citas')
             .select('id')
             .eq('name', 'approved')
+            .single()
+
+        const { data: rejectedStatus } = await this.supabase
+            .from('status_citas')
+            .select('id')
+            .eq('name', 'rejected')
             .single()
 
         let query = this.supabase
@@ -99,6 +106,35 @@ export class CitasService {
 
         const { data, error } = await query
         if (error) throw error
+
+        // Auto-reject past appointments
+        const now = new Date()
+        const pastAppointments = (data || []).filter(apt => {
+            const appointmentDate = new Date(apt.fecha_consulta)
+            const currentStatusName = apt.status?.name || 'pending'
+            return appointmentDate < now && currentStatusName !== 'rejected'
+        })
+
+        if (pastAppointments.length > 0 && rejectedStatus?.id) {
+            const pastIds = pastAppointments.map(apt => apt.id)
+            const { error: updateError } = await this.supabase
+                .from('citas')
+                .update({ status_id: rejectedStatus.id })
+                .in('id', pastIds)
+            
+            if (updateError) {
+                console.error('Error auto-rejecting past appointments:', updateError)
+            } else {
+                // Update the data array to reflect the new status
+                data?.forEach(apt => {
+                    if (pastIds.includes(apt.id)) {
+                        apt.status_id = rejectedStatus.id
+                        apt.status = { name: 'rejected' }
+                    }
+                })
+            }
+        }
+
         return { appointments: data, isEmployee: this.isEmployee }
     }
 
@@ -234,7 +270,7 @@ export class CitasService {
 
         if (error) throw error
         if (conflicts && conflicts.length > 0) {
-            throw new Error('This time slot is already booked.')
+            throw new Error('Este horario ya está ocupado. Por favor selecciona otro horario.')
         }
     }
 
@@ -268,7 +304,7 @@ export class CitasService {
     private async checkUpdatePermission(appointmentId: string) {
         const { data: appointment, error } = await this.supabase
             .from('citas')
-            .select('user_id, employee_id')
+            .select('user_id, employee_id, created_by_employee')
             .eq('id', appointmentId)
             .single()
 
@@ -279,8 +315,12 @@ export class CitasService {
                 throw new Error('Forbidden: You can only update your own appointments')
             }
         } else {
+            // Regular users can only update appointments that were created by employees
             if (appointment.user_id !== this.userId) {
                 throw new Error('Forbidden: You can only update your own appointments')
+            }
+            if (!appointment.created_by_employee) {
+                throw new Error('Forbidden: You can only accept/reject appointments created by employees')
             }
         }
     }

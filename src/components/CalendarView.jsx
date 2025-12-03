@@ -50,7 +50,10 @@ export default function CalendarView({ refreshTrigger, selectedEmployeeId }) {
 
     const getAppointmentsForDay = (day) => {
         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        return appointments.filter(app => isSameDay(new Date(app.fecha_consulta), date));
+        return appointments.filter(app => {
+            if (!app.fecha_consulta) return false;
+            return isSameDay(new Date(app.fecha_consulta), date);
+        });
     };
 
     const handleDayClick = (day) => {
@@ -61,15 +64,24 @@ export default function CalendarView({ refreshTrigger, selectedEmployeeId }) {
 
     // Daily View Component
     const DailyView = ({ date, appointments }) => {
-        // Working hours: 8 AM to 6 PM
-        const startHour = 8;
-        const endHour = 18;
+        // Show all 24 hours of the day
+        const startHour = 0;
+        const endHour = 23;
         const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
         const getAppointmentsForHour = (hour) => {
             return appointments.filter(app => {
-                const appDate = new Date(app.fecha_consulta);
-                return appDate.getHours() === hour;
+                if (!app.fecha_consulta) return false;
+                const appStart = new Date(app.fecha_consulta);
+                const appEnd = app.end_time ? new Date(app.end_time) : new Date(appStart.getTime() + 60 * 60 * 1000); // Default 1 hour if no end_time
+                
+                const hourStart = new Date(date);
+                hourStart.setHours(hour, 0, 0, 0);
+                const hourEnd = new Date(date);
+                hourEnd.setHours(hour + 1, 0, 0, 0);
+                
+                // Show appointment if it overlaps with this hour slot
+                return appStart < hourEnd && appEnd > hourStart;
             });
         };
 
@@ -93,8 +105,8 @@ export default function CalendarView({ refreshTrigger, selectedEmployeeId }) {
 
                             return (
                                 <div key={hour} className="flex gap-4 group">
-                                    <div className="w-16 text-right text-sm font-medium text-gray-500 pt-2">
-                                        {hour}:00
+                                    <div className="w-20 text-right text-sm font-medium text-gray-500 pt-2">
+                                        {String(hour).padStart(2, '0')}:00
                                     </div>
                                     <div className={`flex-1 min-h-[80px] rounded-xl border p-1 ${hourApps.length > 0 ? 'bg-white border-gray-200' :
                                             isPast ? 'bg-gray-50 border-gray-100' : 'bg-white border-dashed border-gray-200'
@@ -137,7 +149,10 @@ export default function CalendarView({ refreshTrigger, selectedEmployeeId }) {
             {selectedDate && (
                 <DailyView
                     date={selectedDate}
-                    appointments={appointments.filter(app => isSameDay(new Date(app.fecha_consulta), selectedDate))}
+                    appointments={appointments.filter(app => {
+                        if (!app.fecha_consulta) return false;
+                        return isSameDay(new Date(app.fecha_consulta), selectedDate);
+                    })}
                 />
             )}
 

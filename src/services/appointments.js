@@ -6,7 +6,14 @@ export const appointmentService = {
             body: appointment,
             method: 'POST',
         });
-        if (error) throw error;
+        if (error) {
+            // If error comes from edge function response
+            throw new Error(error.message || error.error || 'Failed to create appointment');
+        }
+        // Check if data contains an error (from edge function)
+        if (data && data.error) {
+            throw new Error(data.error);
+        }
         return data;
     },
 

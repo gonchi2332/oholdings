@@ -121,6 +121,7 @@ create table public.citas (
   modalidad_id uuid references public.modalidades(id) not null,
   direccion text,
   status_id uuid references public.status_citas(id) not null,
+  created_by_employee boolean default false not null,
   created_at timestamp with time zone default now()
 );
 
