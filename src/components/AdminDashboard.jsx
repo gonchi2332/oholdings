@@ -5,6 +5,7 @@ import { adminService } from '../services/admin';
 import EmployeeList from './admin/EmployeeList';
 import EmployeeProfile from './admin/EmployeeProfile';
 import UsersView from './admin/UsersView';
+import CalendlyView from './CalendlyView';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
@@ -21,8 +22,8 @@ export default function AdminDashboard() {
                 const role = await adminService.getUserRole();
                 setUserRole(role);
                 
-                // Redirect if not admin or employee
-                if (role !== 'admin' && role !== 'employee') {
+                // Only admins can access
+                if (role !== 'admin') {
                     setCurrentView(null);
                 }
             } catch (error) {
@@ -42,12 +43,13 @@ export default function AdminDashboard() {
         );
     }
 
-    if (!user || (userRole !== 'admin' && userRole !== 'employee')) {
+    // Only admins can access the admin dashboard
+    if (!user || userRole !== 'admin') {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Acceso Denegado</h2>
-                    <p className="text-gray-600">No tienes permisos para acceder a esta área.</p>
+                    <p className="text-gray-600">Solo los administradores pueden acceder a esta área.</p>
                 </div>
             </div>
         );
@@ -115,16 +117,16 @@ export default function AdminDashboard() {
         );
     }
 
-    // Dashboard view (default)
+    // Dashboard view (default) - Show calendar
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-                    <p className="text-gray-600">Gestiona empleados, usuarios y citas</p>
+                    <p className="text-gray-600">Gestiona empleados y usuarios</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                     {/* Employees Card */}
                     <button
                         onClick={() => handleViewChange('employees')}
@@ -153,25 +155,15 @@ export default function AdminDashboard() {
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Usuarios</h3>
                         <p className="text-gray-600 text-sm">
-                            Ver usuarios y sus citas
+                            Ver y gestionar usuarios
                         </p>
                     </button>
+                </div>
 
-                    {/* Quick Stats Card */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-3 bg-purple-500/10 rounded-xl">
-                                <Calendar className="w-8 h-8 text-purple-500" />
-                            </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Vista General</h3>
-                        <p className="text-gray-600 text-sm">
-                            {userRole === 'admin' 
-                                ? 'Gestiona todo el sistema desde aquí'
-                                : 'Gestiona tus citas y perfil'
-                            }
-                        </p>
-                    </div>
+                {/* Calendar */}
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Calendario</h2>
+                    <CalendlyView selectedEmployeeId={null} />
                 </div>
             </div>
         </div>

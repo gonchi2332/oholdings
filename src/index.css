@@ -8,6 +8,10 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+  
   body {
     @apply antialiased text-gray-900 bg-white;
   }

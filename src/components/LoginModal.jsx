@@ -131,7 +131,7 @@ export default function LoginModal({ isOpen, onClose }) {
                                             required
                                             value={formData.fullName}
                                             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none"
+                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none placeholder-gray-400"
                                             placeholder="John Doe"
                                         />
                                     </div>
@@ -151,7 +151,7 @@ export default function LoginModal({ isOpen, onClose }) {
                                         required
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none"
+                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none placeholder-gray-400"
                                     />
                                 </div>
                             </div>
@@ -169,7 +169,7 @@ export default function LoginModal({ isOpen, onClose }) {
                                         required
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none"
+                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-mineral-green/20 focus:border-mineral-green transition-colors outline-none placeholder-gray-400"
                                     />
                                 </div>
                             </div>

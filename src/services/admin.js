@@ -87,42 +87,6 @@ export const adminService = {
         return profiles || [];
     },
 
-    // Get appointments for a specific user
-    async getUserAppointments(userId) {
-        const { data, error } = await supabase
-            .from('citas')
-            .select(`
-                *,
-                tipo_consulta:tipos_consulta!citas_tipo_consulta_id_fkey(name),
-                modalidad:modalidades!citas_modalidad_id_fkey(name),
-                status:status_citas!citas_status_id_fkey(name),
-                employee:profiles!citas_employee_id_fkey(full_name, email)
-            `)
-            .eq('user_id', userId)
-            .order('fecha_consulta', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
-    },
-
-    // Get appointments for a specific employee (all statuses)
-    async getEmployeeAppointments(employeeId) {
-        const { data, error } = await supabase
-            .from('citas')
-            .select(`
-                *,
-                tipo_consulta:tipos_consulta!citas_tipo_consulta_id_fkey(name),
-                modalidad:modalidades!citas_modalidad_id_fkey(name),
-                status:status_citas!citas_status_id_fkey(name),
-                user:profiles!citas_user_id_fkey(full_name, email)
-            `)
-            .eq('employee_id', employeeId)
-            .order('fecha_consulta', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
-    },
-
     // Create a new employee (admin only - requires creating auth user first)
     // This is a helper that will be used after creating the auth user
     async updateUserRole(userId, roleName, specialtyId = null) {

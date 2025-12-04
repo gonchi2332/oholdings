@@ -4,7 +4,7 @@ import ProductCard from './ProductCard';
 
 export default function Hero() {
     return (
-        <section className="pt-12 pb-16 sm:pt-16 sm:pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
+        <section className="pt-12 pb-16 sm:pt-16 sm:pb-20 lg:pt-24 lg:pb-28 overflow-hidden bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
                     <div className="lg:col-span-6 text-left mb-16 lg:mb-0">
