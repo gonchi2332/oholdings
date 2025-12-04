@@ -15,8 +15,8 @@ serve(async (req) => {
 
     try {
         // Validate environment variables
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')
-        const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+        const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL')
+        const supabaseAnonKey = Deno.env.get('VITE_SUPABASE_ANON_KEY')
 
         if (!supabaseUrl || !supabaseAnonKey) {
             console.error('Missing required environment variables')

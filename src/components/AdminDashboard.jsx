@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, Calendar, ArrowLeft } from 'lucide-react';
+import { Users, UserPlus, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminService } from '../services/admin';
 import EmployeeList from './admin/EmployeeList';
