@@ -80,6 +80,7 @@ export default function EmployeeDashboard() {
 
     const handleCustomerSelect = (customerId) => {
         setSelectedCustomerId(customerId);
+        // Ir directamente a Calendly sin vista de configuración
         setCurrentView('schedule');
     };
 
@@ -144,7 +145,7 @@ export default function EmployeeDashboard() {
         );
     }
 
-    // Schedule view (Calendly)
+    // Schedule view (Calendly) - Direct access when customer is selected
     if (currentView === 'schedule' && selectedCustomerId) {
         const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
         
@@ -164,7 +165,7 @@ export default function EmployeeDashboard() {
                             Agendar cita con {selectedCustomer?.full_name || selectedCustomer?.email}
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400">
-                            Selecciona una fecha y hora para la consulta.
+                            Selecciona el tipo de evento, fecha y hora. La reunión será enviada a {selectedCustomer?.email}
                         </p>
                     </div>
 

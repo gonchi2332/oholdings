@@ -55,19 +55,42 @@ export default function CalendlyView({ calendlyUrl, selectedEmployeeId, selected
     // Configure prefill data
     // If customer data is provided (employee booking), use customer data
     // Otherwise, use current user data
-    const prefill = customerData ? {
-        name: customerData.full_name || '',
-        email: customerData.email || '',
-    } : (user ? {
-        name: user.user_metadata?.full_name || '',
-        email: user.email || '',
-    } : {});
+    // IMPORTANT: All values must be valid strings (not null, undefined, or objects)
+    const getSafeString = (value) => {
+        if (!value) return '';
+        if (typeof value === 'string') return value.trim();
+        return String(value).trim();
+    };
+
+    // Build prefill object only if we have valid data
+    // Only include properties that have non-empty string values
+    const buildPrefill = () => {
+        if (customerData) {
+            const name = getSafeString(customerData.full_name);
+            const email = getSafeString(customerData.email);
+            const prefillObj = {};
+            if (name) prefillObj.name = name;
+            if (email) prefillObj.email = email;
+            return Object.keys(prefillObj).length > 0 ? prefillObj : null;
+        } else if (user) {
+            const name = getSafeString(user.user_metadata?.full_name || user.email);
+            const email = getSafeString(user.email);
+            const prefillObj = {};
+            if (name) prefillObj.name = name;
+            if (email) prefillObj.email = email;
+            return Object.keys(prefillObj).length > 0 ? prefillObj : null;
+        }
+        return null;
+    };
+
+    const prefill = buildPrefill();
 
     // Add custom parameters for styling (matching your mineral-green theme)
+    // Show event type details so employee can select the type of meeting
     const pageSettings = {
         backgroundColor: isDark ? '1f2937' : 'ffffff',
-        hideEventTypeDetails: true, // Hide event type name AND organizer/host name
-        hideLandingPageDetails: true, // Hide landing page details
+        hideEventTypeDetails: false, // Show event types so employee can select
+        hideLandingPageDetails: false, // Show landing page for better UX
         primaryColor: '00a86b', // mineral-green color
         textColor: isDark ? 'f9fafb' : '4d5055'
     };
@@ -80,25 +103,38 @@ export default function CalendlyView({ calendlyUrl, selectedEmployeeId, selected
 
     // Determine the URL to use
     // Priority: 1. calendlyUrl prop, 2. Employee-specific URL from DB, 3. Environment variable, 4. Default
+    // Ensure URL is a valid string
     let url = calendlyUrl || employeeCalendlyUrl;
     
-    if (!url) {
+    if (!url || typeof url !== 'string') {
         url = import.meta.env.VITE_CALENDLY_DEFAULT_URL || 'https://calendly.com/your-username/consultation';
     }
+    
+    // Ensure URL is a valid string
+    url = String(url).trim();
 
     // Add URL parameters to hide event type details and organizer/host name
+    // Also add customer email and name as URL parameters for Calendly
     let finalUrl = '';
-    if (url) {
+    if (url && typeof url === 'string' && url.trim()) {
         try {
-            const urlWithParams = new URL(url);
-            urlWithParams.searchParams.set('hide_event_type_details', '1');
-            urlWithParams.searchParams.set('hide_landing_page_details', '1');
-            // Hide organizer/host name by hiding all event type details
-            urlWithParams.searchParams.set('hide_gdpr_banner', '1');
+            const urlWithParams = new URL(url.trim());
+            
+            // Remove any existing email/name params to avoid duplicates
+            urlWithParams.searchParams.delete('email');
+            urlWithParams.searchParams.delete('name');
+            urlWithParams.searchParams.delete('a1');
+            
+            // Remove UI hiding parameters to show event types and allow selection
+            // This allows the employee to see and select the type of meeting
+            urlWithParams.searchParams.delete('hide_event_type_details');
+            urlWithParams.searchParams.delete('hide_landing_page_details');
+            
             finalUrl = urlWithParams.toString();
         } catch (error) {
-            console.error('Invalid Calendly URL:', error);
-            finalUrl = url;
+            console.error('Invalid Calendly URL:', error, 'Original URL:', url);
+            // Fallback to original URL if it's a valid string
+            finalUrl = typeof url === 'string' ? url.trim() : '';
         }
     }
 
@@ -418,7 +454,7 @@ export default function CalendlyView({ calendlyUrl, selectedEmployeeId, selected
                             width: '100%'
                         }}
                         pageSettings={pageSettings}
-                        prefill={prefill}
+                        {...(prefill ? { prefill } : {})}
                         utm={utm}
                     />
                 </div>
